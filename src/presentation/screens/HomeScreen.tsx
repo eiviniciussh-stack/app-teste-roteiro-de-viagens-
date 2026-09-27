@@ -5,7 +5,11 @@ import { AppButton } from '@/presentation/components/AppButton';
 import { FeatureCard } from '@/presentation/components/FeatureCard';
 import { colors, spacing, typography } from '@/theme/tokens';
 
-export function HomeScreen() {
+type HomeScreenProps = Readonly<{
+  onStartPlanning: () => void;
+}>;
+
+export function HomeScreen({ onStartPlanning }: HomeScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -16,7 +20,7 @@ export function HomeScreen() {
         </View>
 
         <FeatureCard title={translate('cardTitle')} description={translate('cardDescription')} />
-        <AppButton label={translate('button')} onPress={() => undefined} />
+        <AppButton label={translate('button')} onPress={onStartPlanning} />
         <Text style={styles.note}>{translate('note')}</Text>
       </ScrollView>
     </SafeAreaView>
