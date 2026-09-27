@@ -7,6 +7,7 @@ export const colors = {
   textMuted: '#5E6C69',
   border: '#D9E2DF',
   onPrimary: '#FFFFFF',
+  error: '#B3261E',
 } as const;
 
 export const spacing = {

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -10,19 +9,36 @@ import {
   View,
 } from 'react-native';
 
+import type { TripDraft } from '@/domain/trip/types';
 import { AppButton } from '@/presentation/components/AppButton';
 import { AppTextInput } from '@/presentation/components/AppTextInput';
+import { BackButton } from '@/presentation/components/BackButton';
+import { DateField, todayIsoDate } from '@/presentation/components/DateField';
 import { translate } from '@/services/i18n';
 import { colors, spacing, typography } from '@/theme/tokens';
 
 type TripBasicsScreenProps = Readonly<{
+  draft: TripDraft;
   onBack: () => void;
+  onChange: (changes: Partial<TripDraft>) => void;
+  onContinue: () => void;
 }>;
 
-export function TripBasicsScreen({ onBack }: TripBasicsScreenProps) {
-  const [destination, setDestination] = useState('');
-  const [departureDate, setDepartureDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
+export function TripBasicsScreen({ draft, onBack, onChange, onContinue }: TripBasicsScreenProps) {
+  const [submitted, setSubmitted] = useState(false);
+  const today = todayIsoDate();
+  const destinationMissing = !draft.destination.trim();
+  const departureMissing = !draft.departureDate;
+  const returnMissing = !draft.returnDate;
+  const invalidRange = Boolean(
+    draft.departureDate && draft.returnDate && draft.returnDate < draft.departureDate,
+  );
+  const isValid = !destinationMissing && !departureMissing && !returnMissing && !invalidRange;
+
+  const continueFlow = () => {
+    setSubmitted(true);
+    if (isValid) onContinue();
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -35,51 +51,55 @@ export function TripBasicsScreen({ onBack }: TripBasicsScreenProps) {
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable
-            accessibilityLabel={translate('tripBack')}
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={onBack}
-            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-          >
-            <Text style={styles.backIcon}>‹</Text>
-            <Text style={styles.backLabel}>{translate('tripBack')}</Text>
-          </Pressable>
-
+          <BackButton onPress={onBack} />
           <View style={styles.heading}>
             <Text style={styles.title}>{translate('tripTitle')}</Text>
             <Text style={styles.description}>{translate('tripDescription')}</Text>
           </View>
-
           <View style={styles.form}>
             <AppTextInput
               autoCapitalize="words"
               autoComplete="off"
-              onChangeText={setDestination}
-              placeholder={translate('destinationPlaceholder')}
-              returnKeyType="next"
-              value={destination}
+              error={submitted && destinationMissing ? translate('destinationRequired') : undefined}
               label={translate('destinationLabel')}
-            />
-            <AppTextInput
-              inputMode="numeric"
-              onChangeText={setDepartureDate}
-              placeholder={translate('datePlaceholder')}
-              returnKeyType="next"
-              value={departureDate}
-              label={translate('departureDateLabel')}
-            />
-            <AppTextInput
-              inputMode="numeric"
-              onChangeText={setReturnDate}
-              placeholder={translate('datePlaceholder')}
+              onChangeText={(destination) => onChange({ destination })}
+              placeholder={translate('destinationPlaceholder')}
               returnKeyType="done"
-              value={returnDate}
+              value={draft.destination}
+            />
+            <DateField
+              error={submitted && departureMissing ? translate('departureRequired') : undefined}
+              label={translate('departureDateLabel')}
+              minimumDate={today}
+              onChange={(departureDate) => {
+                onChange({
+                  departureDate,
+                  ...(draft.returnDate && draft.returnDate < departureDate
+                    ? { returnDate: '' }
+                    : {}),
+                });
+              }}
+              value={draft.departureDate}
+            />
+            <DateField
+              error={
+                submitted && returnMissing
+                  ? translate('returnRequired')
+                  : submitted && invalidRange
+                    ? translate('returnBeforeDeparture')
+                    : undefined
+              }
               label={translate('returnDateLabel')}
+              minimumDate={draft.departureDate || today}
+              onChange={(returnDate) => onChange({ returnDate })}
+              value={draft.returnDate}
             />
           </View>
-
-          <AppButton label={translate('continueButton')} onPress={() => undefined} />
+          <AppButton
+            accessibilityHint={!isValid ? translate('completeRequiredFields') : undefined}
+            label={translate('continueButton')}
+            onPress={continueFlow}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -89,20 +109,7 @@ export function TripBasicsScreen({ onBack }: TripBasicsScreenProps) {
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: colors.background, flex: 1 },
   keyboardArea: { flex: 1 },
-  content: {
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
-  backButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    minHeight: 44,
-    paddingRight: spacing.md,
-  },
-  backButtonPressed: { opacity: 0.6 },
-  backIcon: { color: colors.primary, fontSize: 34, lineHeight: 38, marginRight: spacing.xs },
-  backLabel: { color: colors.primary, ...typography.button },
+  content: { flexGrow: 1, padding: spacing.lg },
   heading: { gap: spacing.sm, marginBottom: spacing.xl, marginTop: spacing.lg },
   title: { color: colors.text, ...typography.title },
   description: { color: colors.textMuted, ...typography.body },
