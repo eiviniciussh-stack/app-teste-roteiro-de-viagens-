@@ -104,8 +104,8 @@ export function DateField({ label, value, minimumDate, error, onChange }: DateFi
             <View style={styles.week}>
               {translate('weekdays')
                 .split(',')
-                .map((day) => (
-                  <Text key={day} style={styles.weekday}>
+                .map((day, index) => (
+                  <Text key={`weekday-${index}`} style={styles.weekday}>
                     {day}
                   </Text>
                 ))}
