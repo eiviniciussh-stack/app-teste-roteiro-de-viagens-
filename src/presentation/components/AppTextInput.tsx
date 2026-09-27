@@ -5,19 +5,25 @@ import { colors, radii, spacing, typography } from '@/theme/tokens';
 type AppTextInputProps = Readonly<
   TextInputProps & {
     label: string;
+    error?: string | undefined;
   }
 >;
 
-export function AppTextInput({ label, ...props }: AppTextInputProps) {
+export function AppTextInput({ label, error, ...props }: AppTextInputProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
         placeholderTextColor={colors.textMuted}
-        style={styles.input}
+        style={[styles.input, error && styles.inputError]}
         {...props}
       />
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -35,4 +41,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     ...typography.body,
   },
+  inputError: { borderColor: colors.error },
+  error: { color: colors.error, fontSize: 14 },
 });
